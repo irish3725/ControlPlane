@@ -213,9 +213,22 @@ class Router:
         print('%s: routing table' % self)
         #TODO: print the routes as a two dimensional table for easy inspection
         # Currently the function just prints the route table as a dictionary
-        print(self.rt_tbl_D)
-        
-                
+#        print(self.rt_tbl_D)
+
+        # print lables across the top 
+        print('\n     ', end='')
+        for node in self.rt_tbl_D[self.name]:
+            print(node, ' ', end='')        
+        print()          
+        # print each row 
+        for row, col in self.rt_tbl_D.items():
+            print(' ', row, ' ', end='') 
+            for intf, info in col.items():
+                for cost in info.items(): 
+                    print(cost[1], ' ', end='')
+            print()
+        print()   
+ 
     ## thread target for the host to keep forwarding data
     def run(self):
         print (threading.currentThread().getName() + ': Starting')
