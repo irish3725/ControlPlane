@@ -210,26 +210,24 @@ class Router:
         
     ## Print routing table
     def print_routes(self):
-        nodes = [1,2,'A','B'] 
+        hosts = [1,2] 
+        routers = ['A','B'] 
         print('%s: routing table' % self)
         #TODO: print the routes as a two dimensional table for easy inspection
         # Currently the function just prints the route table as a dictionary
         print('\n        Cost to')
         print(end='        ') 
-        for node in nodes:
-            print(node, ' ', end='')
+        for host in hosts:
+            print(host, ' ', end='')
         print() 
         #print table 
-        for row in nodes:
-            # dont print distances from hosts 
-            if row == 1 or row == 2:
-                continue 
+        for row in routers:
             prefix = '    ' 
             if row == 'B':
                 prefix = 'From'
             print(prefix, row, end='  ') 
-            for column in nodes:
-                weight = '~' 
+            for column in hosts:
+                weight = '~'
                 if row == self.name and self.rt_tbl_D.get(column) != None: 
                     weight = list(self.rt_tbl_D.get(column).values())[0]
                 print(weight, end='  ')  

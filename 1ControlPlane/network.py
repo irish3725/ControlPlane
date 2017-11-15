@@ -210,30 +210,31 @@ class Router:
         
     ## Print routing table
     def print_routes(self):
+        nodes = [1,2,'A','B'] 
         print('%s: routing table' % self)
         #TODO: print the routes as a two dimensional table for easy inspection
         # Currently the function just prints the route table as a dictionary
-#        print(self.rt_tbl_D)
-
-        nodes = list()
-        for node in self.rt_tbl_D[self.name].keys():
-            nodes.append(node)
-        nodes.sort() 
-        print(nodes)
-
-        # print lables across the top 
-        print('\n     ', end='')
-        for node in self.rt_tbl_D[self.name]:
-            print(node, ' ', end='')        
-        print()          
-        # print each row 
-        for row, col in self.rt_tbl_D.items():
-            print(' ', row, ' ', end='') 
-            for intf, info in col.items():
-                for cost in info.items(): 
-                    print(cost[1], ' ', end='')
-            print()
-        print()   
+        print('\n        Cost to')
+        print(end='        ') 
+        for node in nodes:
+            print(node, ' ', end='')
+        print() 
+        #print table 
+        for row in nodes:
+            # dont print distances from hosts 
+            if row == 1 or row == 2:
+                continue 
+            prefix = '    ' 
+            if row == 'B':
+                prefix = 'From'
+            print(prefix, row, end='  ') 
+            for column in nodes:
+                weight = '~' 
+                if row == self.name and self.rt_tbl_D.get(column) != None: 
+                    weight = list(self.rt_tbl_D.get(column).values())[0]
+                print(weight, end='  ')  
+            print()           
+        print()
  
     ## thread target for the host to keep forwarding data
     def run(self):
