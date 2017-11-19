@@ -1,5 +1,5 @@
 '''
-reated on Oct 12, 2016
+Created on Oct 12, 2016
 
 @author: mwitt_000
 '''
@@ -25,11 +25,11 @@ if __name__ == '__main__':
     #create routers and routing tables for connected clients (subnets)
     router_a_rt_tbl_D = {2: {1: 1}} # packet to host 2 through interface 1 for cost 1
     router_a = network.Router(name='A', 
-                              intf_cost_L = [1,1], 
+                              intf_cost_L = [1,1],
                               rt_tbl_D = router_a_rt_tbl_D, 
                               max_queue_size=router_queue_size)
     object_L.append(router_a)
-    router_b_rt_tbl_D = {2: {1: 30}} # packet to host 2 through interface 1 for cost 3
+    router_b_rt_tbl_D = {2: {1: 3}} # packet to host 2 through interface 1 for cost 3
     router_b = network.Router(name='B', 
                               intf_cost_L = [3,1], 
                               rt_tbl_D = router_b_rt_tbl_D, 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     for t in thread_L:
         t.start()
     
-     #send out routing information from router A to router B interface 0
+    #send out routing information from router A to router B interface 0
     router_a.send_routes(1)
     
     #create some send events    
