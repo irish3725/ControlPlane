@@ -193,15 +193,20 @@ class Router:
     def update_routes(self, p, i):
         #TODO: add logic to update the routing tables and
         # possibly send out routing updates
-        # self.rt_tblD is the routing table on this router
+        # self.rt_tbl_D is the routing table on this router
         # self.intf_cost_L are the interface costs for links defined in simulation.py
         print('%s: Received routing update %s from interface %d' % (self, p, i))
-        
+        new_rt_tbl_D = eval(p.data_S)
+        print('new_rt_tbl_D:', new_rt_tbl_D)        
+ 
     ## send out route update
     # @param i Interface number on which to send out a routing update
     def send_routes(self, i):
         # a sample route update packet
-        p = NetworkPacket(0, 'control', 'Sample routing table packet')
+        # turn routing table to string
+        rt_tbl_S = str(self.rt_tbl_D)
+        back_D = eval(rt_tbl_S)
+        p = NetworkPacket(0, 'control', rt_tbl_S)
         try:
             #TODO: add logic to send out a route update
             print('%s: sending routing update "%s" from interface %d' % (self, p, i))
