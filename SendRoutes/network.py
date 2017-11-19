@@ -196,6 +196,8 @@ class Router:
         # self.rt_tbl_D is the routing table on this router
         # self.intf_cost_L are the interface costs for links defined in simulation.py
         print('%s: Received routing update %s from interface %d' % (self, p, i))
+        # keep track of a new cost to a host
+        send_update = False 
         # get routing table from packet as dict 
         new_rt_tbl_D = eval(p.data_S)
         print('new_rt_tbl_D:', new_rt_tbl_D)       
@@ -221,16 +223,34 @@ class Router:
                 # the cost from the router on the other side to the
                 # destination, update that entry 
                 if cost > (n_cost + self.intf_cost_L[i]): 
+                    # need to change cost, so send updates to neighbors
+                    send_update = True 
                     print('updating entry in table for dest:', key)
                     # create new dictionary entry for this destination
-                    new_entry_D = {n_k: n_cost + self.intf_cost_L[i]} 
+                    new_entry_D = {i: n_cost + self.intf_cost_L[i]} 
                     # delete old entry for this destination 
                     del self.rt_tbl_D[key]
                     # create new entry for this destination 
                     self.rt_tbl_D[key] = new_entry_D 
+            # if entry for this destination does not already exist
+            # in self.rt_tbl_D  
             else:
-                print(key, 'does not exist in table', self.rt_tbl_D) 
- 
+                seld_update = True 
+                print('adding entry in table for des:', key)
+                # get interface for this entry and cost 
+                n_k = list(new_rt_tbl_D[key].keys())[0]
+                # get new cost to this destination including the 
+                # current cost out this interface 
+                n_cost = new_rt_tbl_D[key][n_k] + self.intf_cost_L[i]
+                # create new entry for self.rt_tbl_D 
+                new_entry_D = {i : n_cost}
+                self.rt_tbl_D[key] = new_entry_D                
+
+        # if we have changed the table, send updates to all interfaces
+        if send_update:
+            for interface in range(len(self.intf_L)):
+                self.send_routes(interface)
+                print('sending routes out interface:', interface) 
     ## send out route update
     # @param i Interface number on which to send out a routing update
     def send_routes(self, i):
