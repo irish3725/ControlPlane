@@ -196,8 +196,40 @@ class Router:
         # self.rt_tbl_D is the routing table on this router
         # self.intf_cost_L are the interface costs for links defined in simulation.py
         print('%s: Received routing update %s from interface %d' % (self, p, i))
+        # get routing table from packet as dict 
         new_rt_tbl_D = eval(p.data_S)
-        print('new_rt_tbl_D:', new_rt_tbl_D)        
+        print('new_rt_tbl_D:', new_rt_tbl_D)       
+        # for destinations in received routing table 
+        for key in new_rt_tbl_D:
+            # if the destination already exists in self.rt_tbl_D 
+            if key in self.rt_tbl_D:
+                print('new_rt_tbl_D[key]:',new_rt_tbl_D[key])
+                # get first interface from entry for that destination
+                # in received routing table 
+                n_k = list(new_rt_tbl_D[key].keys())[0]
+                # get cost out that interface for this destination
+                # in received routing table 
+                n_cost = new_rt_tbl_D[key][n_k]
+                # get interface for cost in to this destination in
+                # self.rt_tbl_D 
+                k = list(self.rt_tbl_D[key].keys())[0] 
+                # get cost to get to destination from the interface
+                # that this packet was received from  
+                cost = self.rt_tbl_D[key][k] 
+                # if current cost entry is greater than the cost
+                # out interface where we got the new table plus
+                # the cost from the router on the other side to the
+                # destination, update that entry 
+                if cost > (n_cost + self.intf_cost_L[i]): 
+                    print('updating entry in table for dest:', key)
+                    # create new dictionary entry for this destination
+                    new_entry_D = {n_k: n_cost + self.intf_cost_L[i]} 
+                    # delete old entry for this destination 
+                    del self.rt_tbl_D[key]
+                    # create new entry for this destination 
+                    self.rt_tbl_D[key] = new_entry_D 
+            else:
+                print(key, 'does not exist in table', self.rt_tbl_D) 
  
     ## send out route update
     # @param i Interface number on which to send out a routing update
