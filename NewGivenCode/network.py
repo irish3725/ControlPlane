@@ -1,6 +1,5 @@
 import queue
 import threading
-import json
 
 
 ## wrapper class for a queue of packets
@@ -143,15 +142,7 @@ class Router:
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
         #TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}      # {destination: {router: cost}}
-        # add cost table for this router as an entry
-        # in routing table for this router 
-        self.rt_tbl_D[self.name] = self.cost_D
-        # get strings of both dictionaries 
-        cost_S = json.dumps(self.cost_D)       
-        rt_tbl_S = json.dumps(self.rt_tbl_D)       
         print('%s: Initialized routing table' % self)
-        print(self, 'cost table:',cost_S) 
-        print(self, 'routing table:', rt_tbl_S) 
         self.print_routes()
 
 
