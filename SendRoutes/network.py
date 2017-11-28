@@ -154,12 +154,7 @@ class Router:
                 # add cost table for this router as an entry
                 # in routing table for this router 
                 self.rt_tbl_D[self.name] = self.cost_D
-        # get strings of both dictionaries 
-        cost_S = json.dumps(self.cost_D)       
-        rt_tbl_S = json.dumps(self.rt_tbl_D)       
         print('%s: Initialized routing table' % self)
-        print(self, 'cost table:',cost_S) 
-        print(self, 'routing table:', rt_tbl_S) 
         self.print_routes()
 
 
@@ -205,9 +200,10 @@ class Router:
     ## send out route update
     # @param i Interface number on which to send out a routing update
     def send_routes(self, i):
-        # TODO: Send out a routing table update
+        # turn table into a string 
+        rt_tbl_S = json.dumps(self.rt_tbl_D) 
         #create a routing table update packet
-        p = NetworkPacket(0, 'control', 'DUMMY_ROUTING_TABLE')
+        p = NetworkPacket(0, 'control', rt_tbl_S)
         try:
             print('%s: sending routing update "%s" from interface %d' % (self, p, i))
             self.intf_L[i].put(p.to_byte_S(), 'out', True)
