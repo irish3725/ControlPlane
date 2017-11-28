@@ -1,6 +1,7 @@
 import queue
 import threading
 import json
+import sys 
 
 
 ## wrapper class for a queue of packets
@@ -135,6 +136,8 @@ class Router:
     # @param cost_D: cost table to neighbors {neighbor: {interface: cost}}
     # @param max_queue_size: max queue length (passed to Interface)
     def __init__(self, name, cost_D, max_queue_size):
+        self.destinations = ['H1', 'H2', 'RA', 'RB']
+        self.routers = ['RA', 'RB'] 
         self.stop = False #for thread termination
         self.name = name
         #create a list of interfaces
@@ -143,9 +146,14 @@ class Router:
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
         #TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}      # {destination: {router: cost}}
-        # add cost table for this router as an entry
-        # in routing table for this router 
-        self.rt_tbl_D[self.name] = self.cost_D
+        # initialize routing table 
+        for router in self.routers:
+            # add empty dict as entry for all routers 
+            self.rt_tbl_D[router] = {} 
+            if router is self.name: 
+                # add cost table for this router as an entry
+                # in routing table for this router 
+                self.rt_tbl_D[self.name] = self.cost_D
         # get strings of both dictionaries 
         cost_S = json.dumps(self.cost_D)       
         rt_tbl_S = json.dumps(self.rt_tbl_D)       
@@ -219,7 +227,38 @@ class Router:
     ## Print routing table
     def print_routes(self):
         #TODO: print the routes as a two dimensional table
-        print(self.rt_tbl_D)
+        print('\nRouting Table for', self)
+        print('\n             Cost To')
+        print('             ', end='')
+        # print all possible destinations 
+        for dst in self.destinations:
+            print(dst, end='  ') 
+        # get each row (key) from routing table 
+        for key in self.rt_tbl_D.keys():
+            print()
+            # give the table some space with prefix 
+            prefix = '        ' 
+            # if the row is middleish, write From 
+            if key == 'RA': 
+                prefix = ' From   '     
+            print(prefix, key, end = '   ') 
+            # now in same order as above, print costs within row 
+            for dst in self.destinations:
+                # if there is an entry for this destination
+                if dst in self.rt_tbl_D[key].keys(): 
+                    # start final_cost as large value 
+                    final_cost = sys.maxsize 
+                    # check all interfaces for cost 
+                    for interface, cost in self.rt_tbl_D[key][dst].items(): 
+                        # if this interface has lowest cost, set as final 
+                        if cost < final_cost:
+                            final_cost = cost 
+                    # print lowest cost to destination print(final_cost, end = '   ') 
+                    print(final_cost, end='   ')     
+                    #print(self.rt_tbl_D[key][dst], end='')
+                else:
+                    print('~', end='   ') 
+        print('\n')
 
                 
     ## thread target for the host to keep forwarding data
