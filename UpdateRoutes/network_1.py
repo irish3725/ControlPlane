@@ -218,8 +218,12 @@ class Router:
         #TODO: add logic to update the routing tables and
         # possibly send out routing updates
         print('%s: Received routing update %s from interface %d' % (self, p, i))
-
-        
+        update_D = json.loads(p.data_S)
+        for router, entry in update_D.items():
+            if update_D[router] != {}:
+                self.rt_tbl_D[router] = entry       
+        self.print_routes()
+ 
     ## Print routing table
     def print_routes(self):
         #TODO: print the routes as a two dimensional table
