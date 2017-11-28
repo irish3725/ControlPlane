@@ -217,22 +217,20 @@ class Router:
     #  @param p Packet containing routing information
     def update_routes(self, p, i):
         # booleans to tell if we need to update our neighbors
-        new = False 
         update = False 
       
         update_D = json.loads(p.data_S)
         for router, entry in update_D.items():
-            # if there is no entry in router's table yet 
-            if self.rt_tbl_D[router] == {}:
-                # add it to the table and mark update as True 
+            # if entry is not referring to this router
+            if router != self.name:           
+                # update the entry 
                 self.rt_tbl_D[router] = entry      
-                new = True      
     
         update = self.update_table() 
         # print new routing table 
         self.print_routes()
         # if we got a new entry or updated our table  
-        if new or update:
+        if update:
             # send routes out all interfaces 
             for i in range(len(self.intf_L)):
                 self.send_routes(i)
@@ -242,6 +240,37 @@ class Router:
         # boolean for if we need to update our neighbors
         update = False
 
+        # get new row for this router
+        distance = self.Bellman_Ford()
+       
+        # input new row into routing table
+        for dst in self.destinations:
+            # get index in distance of this destination 
+            i = self.destinations.index(dst) 
+            # check to see if there is already an entry 
+            if dst in self.rt_tbl_D[self.name].keys(): 
+                for interface, cost in self.rt_tbl_D[self.name][dst].items():
+                    #TODO: keep track of predecessors so 
+                    # interface can be updated
+               
+                                  
+                    # if cost is now different, input new cost 
+                    #TODO: input actual interface instead of just the 
+                    # one that was already there   
+                    if cost != distance[i]:
+                        self.rt_tbl_D[self.name][dst] = {interface: distance[i]}
+                        update = True  
+            # if there is no entry, create one
+            #TODO: input actual interface instead of just 0   
+            else:
+                self.rt_tbl_D[self.name][dst] = {0: distance[i]}
+                update = True                
+
+ 
+        return update
+   
+
+    def Bellman_Ford(self):
         edges = list()
         # for each router, find all edges connected to that router 
         for router in self.routers:
@@ -274,10 +303,8 @@ class Router:
                     distance[v] = distance[u] + edge[2] 
                 if (distance[v] + edge[2]) < distance[u]:
                     distance[u] = distance[v] + edge[2]
- 
-        print(distance)
 
-        return update 
+        return distance 
  
     ## Print routing table
     def print_routes(self):
