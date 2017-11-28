@@ -138,6 +138,7 @@ class Router:
     def __init__(self, name, cost_D, max_queue_size):
         self.destinations = ['H1', 'H2', 'RA', 'RB']
         self.routers = ['RA', 'RB'] 
+        self.edges = [['H1', 'RA', 1], ['RA', 'RB', 1], ['RB', 'H2', 3]] 
         self.stop = False #for thread termination
         self.name = name
         #create a list of interfaces
@@ -215,30 +216,59 @@ class Router:
     ## forward the packet according to the routing table
     #  @param p Packet containing routing information
     def update_routes(self, p, i):
-        # boolean to tell if we need to update our neighbors
+        # booleans to tell if we need to update our neighbors
+        new = False 
         update = False 
         #TODO: add logic to update the routing tables and
         # possibly send out routing updates
-        print('%s: Received routing update %s from interface %d' % (self, p, i))
+       
         update_D = json.loads(p.data_S)
         for router, entry in update_D.items():
             # if there is no entry in router's table yet 
             if self.rt_tbl_D[router] == {}:
                 # add it to the table and mark update as True 
                 self.rt_tbl_D[router] = entry      
-                update = True
-       
+                new = True      
+    
+        update = self.update_table() 
         # print new routing table 
         self.print_routes()
-        # if we need to update our neighbors  
-        if update:
+        # if we got a new entry or updated our table  
+        if new or update:
             # send routes out all interfaces 
             for i in range(len(self.intf_L)):
                 self.send_routes(i)
 
     ## Use Bellman-Ford to update table
     def update_table(self):
-        return False
+        # boolean for if we need to update our neighbors
+        update = False
+
+        # create list of distances to calculate
+        # and fill with inf values
+        distance = [sys.maxsize] * len(self.destinations) 
+
+        # set distance to self to 0
+        distance[self.destinations.index(self.name)] = 0
+
+        # iterate number of edges - 1 times
+        for i in range(len(self.edges) - 1):
+            # for each edge we see, do comparisons 
+            for edge in self.edges:
+                # get vertices u, v from edge 
+                u = self.destinations.index(edge[0])
+                v = self.destinations.index(edge[1])
+        
+                # if we find a shorter path, change distance 
+                # do this twice because edges are bi-directional
+                if (distance[u] + edge[2]) < distance[v]:
+                    distance[v] = distance[u] + edge[2] 
+                if (distance[v] + edge[2]) < distance[u]:
+                    distance[u] = distance[v] + edge[2]
+ 
+        print(distance)
+
+        return update 
  
     ## Print routing table
     def print_routes(self):
