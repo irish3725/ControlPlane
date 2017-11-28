@@ -138,7 +138,7 @@ class Router:
     def __init__(self, name, cost_D, max_queue_size):
         self.destinations = ['H1', 'H2', 'RA', 'RB']
         self.routers = ['RA', 'RB'] 
-        self.edges = [['H1', 'RA', 1], ['RA', 'RB', 1], ['RB', 'H2', 3]] 
+#        self.edges = [['H1', 'RA', 1], ['RA', 'RB', 1], ['RB', 'H2', 3]] 
         self.stop = False #for thread termination
         self.name = name
         #create a list of interfaces
@@ -219,9 +219,7 @@ class Router:
         # booleans to tell if we need to update our neighbors
         new = False 
         update = False 
-        #TODO: add logic to update the routing tables and
-        # possibly send out routing updates
-       
+      
         update_D = json.loads(p.data_S)
         for router, entry in update_D.items():
             # if there is no entry in router's table yet 
@@ -244,6 +242,17 @@ class Router:
         # boolean for if we need to update our neighbors
         update = False
 
+        edges = list()
+        # for each router, find all edges connected to that router 
+        for router in self.routers:
+            # for each possible destination 
+            for dst in self.destinations:
+                # if destination is connected to router 
+                if dst in self.rt_tbl_D[router].keys():
+                    # add edge to list
+                    for interface, cost in self.rt_tbl_D[router][dst].items():
+                        edges.append([router, dst, cost]) 
+
         # create list of distances to calculate
         # and fill with inf values
         distance = [sys.maxsize] * len(self.destinations) 
@@ -252,9 +261,9 @@ class Router:
         distance[self.destinations.index(self.name)] = 0
 
         # iterate number of edges - 1 times
-        for i in range(len(self.edges) - 1):
+        for i in range(len(edges) - 1):
             # for each edge we see, do comparisons 
-            for edge in self.edges:
+            for edge in edges:
                 # get vertices u, v from edge 
                 u = self.destinations.index(edge[0])
                 v = self.destinations.index(edge[1])
