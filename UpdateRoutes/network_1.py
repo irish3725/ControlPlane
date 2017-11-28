@@ -215,14 +215,30 @@ class Router:
     ## forward the packet according to the routing table
     #  @param p Packet containing routing information
     def update_routes(self, p, i):
+        # boolean to tell if we need to update our neighbors
+        update = False 
         #TODO: add logic to update the routing tables and
         # possibly send out routing updates
         print('%s: Received routing update %s from interface %d' % (self, p, i))
         update_D = json.loads(p.data_S)
         for router, entry in update_D.items():
-            if update_D[router] != {}:
-                self.rt_tbl_D[router] = entry       
+            # if there is no entry in router's table yet 
+            if self.rt_tbl_D[router] == {}:
+                # add it to the table and mark update as True 
+                self.rt_tbl_D[router] = entry      
+                update = True
+       
+        # print new routing table 
         self.print_routes()
+        # if we need to update our neighbors  
+        if update:
+            # send routes out all interfaces 
+            for i in range(len(self.intf_L)):
+                self.send_routes(i)
+
+    ## Use Bellman-Ford to update table
+    def update_table(self):
+        return False
  
     ## Print routing table
     def print_routes(self):
