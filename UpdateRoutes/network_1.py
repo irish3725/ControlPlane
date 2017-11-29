@@ -226,7 +226,7 @@ class Router:
                 # update the entry 
                 self.rt_tbl_D[router] = entry      
     
-        update = self.update_table() 
+        update = self.update_table(i) 
         # print new routing table 
         self.print_routes()
         # if we got a new entry or updated our table  
@@ -236,12 +236,12 @@ class Router:
                 self.send_routes(i)
 
     ## Use Bellman-Ford to update table
-    def update_table(self):
+    def update_table(self, interface):
         # boolean for if we need to update our neighbors
         update = False
 
-        # get new row for this router
-        distance = self.Bellman_Ford()
+
+        distance, predecessor = self.Bellman_Ford()
        
         # input new row into routing table
         for dst in self.destinations:
@@ -263,7 +263,7 @@ class Router:
             # if there is no entry, create one
             #TODO: input actual interface instead of just 0   
             else:
-                self.rt_tbl_D[self.name][dst] = {0: distance[i]}
+                self.rt_tbl_D[self.name][dst] = {interface: distance[i]}
                 update = True                
 
  
@@ -286,6 +286,9 @@ class Router:
         # and fill with inf values
         distance = [sys.maxsize] * len(self.destinations) 
 
+        # create list of predecessors
+        predecessor = [None] * len(self.destinations)
+
         # set distance to self to 0
         distance[self.destinations.index(self.name)] = 0
 
@@ -300,11 +303,13 @@ class Router:
                 # if we find a shorter path, change distance 
                 # do this twice because edges are bi-directional
                 if (distance[u] + edge[2]) < distance[v]:
-                    distance[v] = distance[u] + edge[2] 
+                    distance[v] = distance[u] + edge[2]
+                    predecessor[v] = u 
                 if (distance[v] + edge[2]) < distance[u]:
                     distance[u] = distance[v] + edge[2]
+                    predecessor[v] = u 
 
-        return distance 
+        return distance, predecessor 
  
     ## Print routing table
     def print_routes(self):
