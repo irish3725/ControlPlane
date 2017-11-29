@@ -115,6 +115,9 @@ class Host:
         pkt_S = self.intf_L[0].get('in')
         if pkt_S is not None:
             print('%s: received packet "%s"' % (self, pkt_S))
+            p = NetworkPacket.from_byte_S(pkt_S)
+            if self.addr == 'H2' and p.prot_S == 'data' :
+                self.udt_send('H1', 'reply message')
        
     ## thread target for the host to keep receiving data
     def run(self):
@@ -236,7 +239,7 @@ class Router:
                 self.send_routes(i)
 
     ## Use Bellman-Ford to update table
-    def update_table(self, interface):
+    def update_table(self, interface_i):
         # boolean for if we need to update our neighbors
         update = False
 
@@ -263,7 +266,7 @@ class Router:
             # if there is no entry, create one
             #TODO: input actual interface instead of just 0   
             else:
-                self.rt_tbl_D[self.name][dst] = {interface: distance[i]}
+                self.rt_tbl_D[self.name][dst] = {interface_i: distance[i]}
                 update = True                
 
  
