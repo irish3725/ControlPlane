@@ -107,14 +107,14 @@ class Host:
     # @param data_S: data being transmitted to the network layer
     def udt_send(self, dst, data_S):
         p = NetworkPacket(dst, 'data', data_S)
-        print('%s: sending packet "%s"' % (self, p))
+###        print('%s: sending packet "%s"' % (self, p))
         self.intf_L[0].put(p.to_byte_S(), 'out') #send packets always enqueued successfully
         
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.intf_L[0].get('in')
         if pkt_S is not None:
-            print('%s: received packet "%s"' % (self, pkt_S))
+###            print('%s: received packet "%s"' % (self, pkt_S))
             p = NetworkPacket.from_byte_S(pkt_S)
             if p.prot_S == 'data' and self.addr == 'H2':
                 self.udt_send('H1', 'Return message to H1')          
@@ -139,8 +139,8 @@ class Router:
     # @param cost_D: cost table to neighbors {neighbor: {interface: cost}}
     # @param max_queue_size: max queue length (passed to Interface)
     def __init__(self, name, cost_D, max_queue_size):
-        self.destinations = ['H1', 'H2', 'RA', 'RB']
-        self.routers = ['RA', 'RB'] 
+        self.destinations = ['H1', 'H2', 'H3', 'RA', 'RB', 'RC', 'RD']
+        self.routers = ['RA', 'RB', 'RC', 'RD'] 
         self.stop = False #for thread termination
         self.name = name 
         #create a list of interfaces
@@ -199,8 +199,8 @@ class Router:
             for interface, cost in self.rt_tbl_D[self.name][dst].items():
                 # for now we assume the outgoing interface is 1
                 self.intf_L[interface].put(p.to_byte_S(), 'out', True)
-                print('%s: forwarding packet "%s" from interface %d to %d' % \
-                    (self, p, i, interface))
+###                print('%s: forwarding packet "%s" from interface %d to %d' % \
+###                    (self, p, i, interface))
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
             pass
@@ -214,7 +214,7 @@ class Router:
         #create a routing table update packet
         p = NetworkPacket(0, 'control', rt_tbl_S)
         try:
-            print('%s: sending routing update "%s" from interface %d' % (self, p, i))
+###            print('%s: sending routing update "%s" from interface %d' % (self, p, i))
             self.intf_L[i].put(p.to_byte_S(), 'out', True)
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
@@ -259,7 +259,7 @@ class Router:
                 for interface, cost in self.rt_tbl_D[self.name][dst].items():
                     # if cost is now different, get new interface
                     # and input new cost 
-                    if cost != distance[i]:
+                    if cost < distance[i]:
                         nInterface = self.get_interface(dst, predecessor) 
                         # check to see if we have valid new interface
                         if nInterface == -1:
@@ -268,7 +268,6 @@ class Router:
                         self.rt_tbl_D[self.name][dst] = {nInterface: distance[i]}
                         update = True  
             # if there is no entry, create one
-            #TODO: input actual interface instead of just 0   
             else:
                 nInterface = self.get_interface(dst, predecessor) 
                 self.rt_tbl_D[self.name][dst] = {nInterface: distance[i]}
@@ -280,14 +279,20 @@ class Router:
     def get_interface(self, destination, predecessor):
         for i in range(len(predecessor)): 
             # check to see if destination is self
-            if destination == self.name:
+            destination_index = self.destinations.index(destination) 
+            if destination == self.name or predecessor[destination_index] == None:
                 return -1 
             # if we find the destination in self.neighbor_L, 
             # return that interface
             if destination in self.neighbor_L:
                 return self.neighbor_L.index(destination)
             else:
-                destination = self.destinations[predecessor[self.destinations.index(destination)]] 
+                destination = self.destinations.index(destination)
+###                print('destination index:', destination) 
+                destination = predecessor[destination] 
+###                print('predecessor index:', destination) 
+###                print('predecessor list:', predecessor) 
+                destination = self.destinations[destination] 
         return -1        
 
     def Bellman_Ford(self):
@@ -333,7 +338,8 @@ class Router:
  
     ## Print routing table
     def print_routes(self):
-        #TODO: print the routes as a two dimensional table
+        if self.name != 'RA':
+            return 
         print('\nRouting Table for %s:' % (self.name))
         print('\n             Cost To')
         print('             ', end='')
@@ -361,7 +367,10 @@ class Router:
                         if cost < final_cost:
                             final_cost = cost 
                     # print lowest cost to destination print(final_cost, end = '   ') 
-                    print(final_cost, end='   ')     
+                    if final_cost == sys.maxsize:
+                        print('~', end='   ')     
+                    else:
+                        print(final_cost, end='   ')     
                     #print(self.rt_tbl_D[key][dst], end='')
                 else:
                     print('~', end='   ') 
