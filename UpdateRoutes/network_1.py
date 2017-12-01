@@ -138,18 +138,20 @@ class Router:
     def __init__(self, name, cost_D, max_queue_size):
         self.destinations = ['H1', 'H2', 'RA', 'RB']
         self.routers = ['RA', 'RB'] 
-#        self.edges = [['H1', 'RA', 1], ['RA', 'RB', 1], ['RB', 'H2', 3]] 
         self.stop = False #for thread termination
         self.name = name 
         #create a list of interfaces
         self.intf_L = [Interface(max_queue_size) for _ in range(len(cost_D))]
         #save neighbors and interfeces on which we connect to them
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
-        #TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}      # {destination: {router: cost}}
         self.neighbor_L = [-1] * len(self.intf_L) 
         # initialize routing table 
         for router in self.routers:
+            # add router entry to neighbor_L if it exists
+            for neighbor, entry in self.cost_D.items():
+                for interface in entry.keys(): 
+                    self.neighbor_L[interface] = neighbor 
             # add empty dict as entry for all routers 
             self.rt_tbl_D[router] = {} 
             if router is self.name: 
@@ -222,17 +224,7 @@ class Router:
       
         update_D = json.loads(p.data_S)
         for router, entry in update_D.items():
-            # check to see if we have an entry in self.neighbor_L
-            # that matches the interface where we got this update
-            # if not, then add router to this list to show that 
-            # this router is on the other side of this interface 
-            print('router:', router, 'self.rt_tbl_D.keys()', self.rt_tbl_D.keys())
-            if self.rt_tbl_D[router] == {}:
-                print('self.rt_tbl_D[router] has no entry') 
-                if self.neighbor_L[i] == -1: 
-                    self.neighbor_L[i] = router; 
-                    print("!!!!Interface table for", self.name, "is now:", self.neighbor_L)
-             # if entry is not referring to this router
+            # if entry is not referring to this router
             if router != self.name:           
                 # update the entry 
                 self.rt_tbl_D[router] = entry      
@@ -252,7 +244,9 @@ class Router:
         update = False
 
         distance, predecessor = self.Bellman_Ford()
-       
+      
+        print('predecessor for router', self.name, ':',predecessor)
+ 
         # input new row into routing table
         for dst in self.destinations:
             # get index in distance of this destination 
@@ -260,15 +254,11 @@ class Router:
             # check to see if there is already an entry 
             if dst in self.rt_tbl_D[self.name].keys(): 
                 for interface, cost in self.rt_tbl_D[self.name][dst].items():
-                    #TODO: keep track of predecessors so 
-                    # interface can be updated
-               
-                                  
-                    # if cost is now different, input new cost 
-                    #TODO: input actual interface instead of just the 
-                    # one that was already there   
+                    # if cost is now different, get new interface
+                    # and input new cost 
                     if cost != distance[i]:
-                        self.rt_tbl_D[self.name][dst] = {in_interface: distance[i]}
+                        nInterface = get_interface(dst, predecessor) 
+                        self.rt_tbl_D[self.name][dst] = {nInterface: distance[i]}
                         update = True  
             # if there is no entry, create one
             #TODO: input actual interface instead of just 0   
@@ -278,7 +268,16 @@ class Router:
 
  
         return update
-   
+  
+    def get_interface(self, destination, predecessor):
+        for i in range(10):
+            # if we find the destination in self.neighbors, 
+            # return that interface
+            if destination in self.neighbors:
+                return self.neighbors.index(destination)
+            else:
+                destination = predecessor[self.destinations.index(destination)] 
+        return -1        
 
     def Bellman_Ford(self):
         edges = list()
@@ -315,9 +314,9 @@ class Router:
                 if (distance[u] + edge[2]) < distance[v]:
                     distance[v] = distance[u] + edge[2]
                     predecessor[v] = u 
-                if (distance[v] + edge[2]) < distance[u]:
-                    distance[u] = distance[v] + edge[2]
-                    predecessor[v] = u 
+#                if (distance[v] + edge[2]) < distance[u]:
+#                    distance[u] = distance[v] + edge[2]
+#                    predecessor[v] = u 
 
         return distance, predecessor 
  
