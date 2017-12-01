@@ -245,8 +245,6 @@ class Router:
 
         distance, predecessor = self.Bellman_Ford()
       
-        print('predecessor for router', self.name, ':',predecessor)
- 
         # input new row into routing table
         for dst in self.destinations:
             # get index in distance of this destination 
@@ -257,13 +255,18 @@ class Router:
                     # if cost is now different, get new interface
                     # and input new cost 
                     if cost != distance[i]:
-                        nInterface = get_interface(dst, predecessor) 
+                        nInterface = self.get_interface(dst, predecessor) 
+                        # check to see if we have valid new interface
+                        if nInterface == -1:
+                            nInterface = interface
+ 
                         self.rt_tbl_D[self.name][dst] = {nInterface: distance[i]}
                         update = True  
             # if there is no entry, create one
             #TODO: input actual interface instead of just 0   
             else:
-                self.rt_tbl_D[self.name][dst] = {in_interface: distance[i]}
+                nInterface = self.get_interface(dst, predecessor) 
+                self.rt_tbl_D[self.name][dst] = {nInterface: distance[i]}
                 update = True                
 
  
@@ -271,12 +274,15 @@ class Router:
   
     def get_interface(self, destination, predecessor):
         for i in range(10):
-            # if we find the destination in self.neighbors, 
+            # check to see if destination is self
+            if destination == self.name:
+                return -1 
+            # if we find the destination in self.neighbor_L, 
             # return that interface
-            if destination in self.neighbors:
-                return self.neighbors.index(destination)
+            if destination in self.neighbor_L:
+                return self.neighbor_L.index(destination)
             else:
-                destination = predecessor[self.destinations.index(destination)] 
+                destination = self.destinations[predecessor[self.destinations.index(destination)]] 
         return -1        
 
     def Bellman_Ford(self):
