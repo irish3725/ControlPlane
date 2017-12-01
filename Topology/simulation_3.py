@@ -80,10 +80,10 @@ if __name__ == '__main__':
     router_d.print_routes(True)
     for obj in object_L:
         if str(type(obj)) == "<class 'network.Router'>":
-            obj.print_routes()
+            obj.print_routes(True)
 
     #send packet from host 1 to host 2
-    host_1.udt_send('H2', 'MESSAGE_FROM_H1')
+    host_1.udt_send('H3', 'MESSAGE_FROM_H1')
     sleep(simulation_time)
     
     

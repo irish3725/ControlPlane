@@ -107,16 +107,17 @@ class Host:
     # @param data_S: data being transmitted to the network layer
     def udt_send(self, dst, data_S):
         p = NetworkPacket(dst, 'data', data_S)
-###        print('%s: sending packet "%s"' % (self, p))
+        print('%s: sending packet "%s"' % (self, p))
         self.intf_L[0].put(p.to_byte_S(), 'out') #send packets always enqueued successfully
         
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.intf_L[0].get('in')
         if pkt_S is not None:
-###            print('%s: received packet "%s"' % (self, pkt_S))
             p = NetworkPacket.from_byte_S(pkt_S)
-            if p.prot_S == 'data' and self.addr == 'H2':
+            if p.prot_S == 'data':
+                print('%s: received packet "%s"' % (self, pkt_S))
+            if p.prot_S == 'data' and self.addr == 'H3':
                 self.udt_send('H1', 'Return message to H1')          
              
     ## thread target for the host to keep receiving data
@@ -199,8 +200,9 @@ class Router:
             for interface, cost in self.rt_tbl_D[self.name][dst].items():
                 # for now we assume the outgoing interface is 1
                 self.intf_L[interface].put(p.to_byte_S(), 'out', True)
-###                print('%s: forwarding packet "%s" from interface %d to %d' % \
-###                    (self, p, i, interface))
+                if p.prot_S == 'data':
+                    print('%s: forwarding packet "%s" from interface %d to %d' % \
+                        (self, p, i, interface))
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
             pass
