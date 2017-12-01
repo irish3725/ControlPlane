@@ -226,23 +226,36 @@ class Router:
     def update_routes(self, p, i):
         # booleans to tell if we need to update our neighbors
         update = False 
-      
+        new = False  
+     
         update_D = json.loads(p.data_S)
-        for router, entry in update_D.items():
+
+        new = self.read_update(update_D)
+
             # if entry is not referring to this router
-            if router != self.name:           
-                # update the entry 
-                self.rt_tbl_D[router] = entry      
+###            if router != self.name:           
+###                # update the entry 
+###                self.rt_tbl_D[router] = entry      
 
         update = self.update_table(i) 
         # print new routing table 
         self.print_routes()
         # if we got a new entry or updated our table  
-        if update:
+        if new or update:
             # send routes out all interfaces 
             for i in range(len(self.intf_L)):
                 self.send_routes(i)
-
+###        else:
+###            print("router: %s done sending routes" %(self.name))
+    
+    def read_update(self, update_D): 
+        update = False 
+        for router, entry in update_D.items():
+            if len(update_D[router].keys()) > len(self.rt_tbl_D[router].keys()):
+                self.rt_tbl_D[router] = entry 
+                update = True 
+        return update   
+                            
     ## Use Bellman-Ford to update table
     def update_table(self, in_interface):
         # boolean for if we need to update our neighbors
@@ -259,7 +272,8 @@ class Router:
                 for interface, cost in self.rt_tbl_D[self.name][dst].items():
                     # if cost is now different, get new interface
                     # and input new cost 
-                    if cost < distance[i]:
+###                    print('from %s to %s cost: %d, distance[i]: %d' %(self.name, dst, cost, distance[i])) 
+                    if cost > distance[i]:
                         nInterface = self.get_interface(dst, predecessor) 
                         # check to see if we have valid new interface
                         if nInterface == -1:
@@ -288,10 +302,7 @@ class Router:
                 return self.neighbor_L.index(destination)
             else:
                 destination = self.destinations.index(destination)
-###                print('destination index:', destination) 
                 destination = predecessor[destination] 
-###                print('predecessor index:', destination) 
-###                print('predecessor list:', predecessor) 
                 destination = self.destinations[destination] 
         return -1        
 
@@ -324,21 +335,23 @@ class Router:
                 # get vertices u, v from edge 
                 u = self.destinations.index(edge[0])
                 v = self.destinations.index(edge[1])
-        
+                w = edge[2]        
+
                 # if we find a shorter path, change distance 
                 # do this twice because edges are bi-directional
-                if (distance[u] + edge[2]) < distance[v]:
-                    distance[v] = distance[u] + edge[2]
+                if (distance[u] + w) < distance[v]:
+                    distance[v] = distance[u] + w 
                     predecessor[v] = u 
-#                if (distance[v] + edge[2]) < distance[u]:
-#                    distance[u] = distance[v] + edge[2]
-#                    predecessor[v] = u 
+                if (distance[v] + w) < distance[u]:
+                    distance[u] = distance[v] + w 
+                    predecessor[u] = v 
 
-        return distance, predecessor 
+###        print('distance table for %s = %s' %(self.name, distance)) 
+        return distance, predecessor
  
     ## Print routing table
-    def print_routes(self):
-        if self.name != 'RA':
+    def print_routes(self, print_all=False):
+        if not print_all and self.name != 'RB':
             return 
         print('\nRouting Table for %s:' % (self.name))
         print('\n             Cost To')
