@@ -21,7 +21,7 @@ if __name__ == '__main__':
     
     #create routers and cost tables for reaching neighbors
     # table for RA 
-    cost_D = {'H1': {0: 1}, 'H2': {1: 1}, 'RB': {2: 3}, 'RC': {3: 1}} # {neighbor: {interface: cost}}
+    cost_D = {'H1': {0: 1}, 'H2': {1: 1}, 'RB': {2: 3}, 'RC': {3: 3}} # {neighbor: {interface: cost}}
     router_a = network.Router(name='RA', 
                               cost_D = cost_D,
                               max_queue_size=router_queue_size)
@@ -35,14 +35,14 @@ if __name__ == '__main__':
     object_L.append(router_b)
 
     # table for RC
-    cost_D = {'RA': {0: 1}, 'RD': {1: 3}} # {neighbor: {interface: cost}}
+    cost_D = {'RA': {0: 3}, 'RD': {1: 1}} # {neighbor: {interface: cost}}
     router_c = network.Router(name='RC', 
                               cost_D = cost_D,
                               max_queue_size=router_queue_size)
     object_L.append(router_c)
 
     # table for RD
-    cost_D = {'RB': {0: 1}, 'RC': {1: 3}, 'H3': {2: 1}} # {neighbor: {interface: cost}}
+    cost_D = {'RB': {0: 1}, 'RC': {1: 1}, 'H3': {2: 1}} # {neighbor: {interface: cost}}
     router_d = network.Router(name='RD', 
                               cost_D = cost_D,
                               max_queue_size=router_queue_size)
