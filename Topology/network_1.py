@@ -3,7 +3,7 @@ import threading
 import json
 import sys 
 
-
+ 
 ## wrapper class for a queue of packets
 class Interface:
     ## @param maxsize - the maximum size of the queue storing packets
@@ -116,9 +116,9 @@ class Host:
         if pkt_S is not None:
             print('%s: received packet "%s"' % (self, pkt_S))
             p = NetworkPacket.from_byte_S(pkt_S)
-            if self.addr == 'H2' and p.prot_S == 'data' :
-                self.udt_send('H1', 'reply message')
-       
+            if p.prot_S == 'data' and self.addr == 'H2':
+                self.udt_send('H1', 'Return message to H1')          
+             
     ## thread target for the host to keep receiving data
     def run(self):
         print (threading.currentThread().getName() + ': Starting')
@@ -141,17 +141,20 @@ class Router:
     def __init__(self, name, cost_D, max_queue_size):
         self.destinations = ['H1', 'H2', 'RA', 'RB']
         self.routers = ['RA', 'RB'] 
-#        self.edges = [['H1', 'RA', 1], ['RA', 'RB', 1], ['RB', 'H2', 3]] 
         self.stop = False #for thread termination
-        self.name = name
+        self.name = name 
         #create a list of interfaces
         self.intf_L = [Interface(max_queue_size) for _ in range(len(cost_D))]
         #save neighbors and interfeces on which we connect to them
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
-        #TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}      # {destination: {router: cost}}
+        self.neighbor_L = [-1] * len(self.intf_L) 
         # initialize routing table 
         for router in self.routers:
+            # add router entry to neighbor_L if it exists
+            for neighbor, entry in self.cost_D.items():
+                for interface in entry.keys(): 
+                    self.neighbor_L[interface] = neighbor 
             # add empty dict as entry for all routers 
             self.rt_tbl_D[router] = {} 
             if router is self.name: 
@@ -190,12 +193,14 @@ class Router:
     #  @param i Incoming interface number for packet p
     def forward_packet(self, p, i):
         try:
-            # TODO: Here you will need to implement a lookup into the 
-            # forwarding table to find the appropriate outgoing interface
-            # for now we assume the outgoing interface is 1
-            self.intf_L[1].put(p.to_byte_S(), 'out', True)
-            print('%s: forwarding packet "%s" from interface %d to %d' % \
-                (self, p, i, 1))
+            # get destination
+            dst = p.dst 
+            # get out interface from routing table
+            for interface, cost in self.rt_tbl_D[self.name][dst].items():
+                # for now we assume the outgoing interface is 1
+                self.intf_L[interface].put(p.to_byte_S(), 'out', True)
+                print('%s: forwarding packet "%s" from interface %d to %d' % \
+                    (self, p, i, interface))
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
             pass
@@ -228,7 +233,7 @@ class Router:
             if router != self.name:           
                 # update the entry 
                 self.rt_tbl_D[router] = entry      
-    
+
         update = self.update_table(i) 
         # print new routing table 
         self.print_routes()
@@ -239,13 +244,12 @@ class Router:
                 self.send_routes(i)
 
     ## Use Bellman-Ford to update table
-    def update_table(self, interface_i):
+    def update_table(self, in_interface):
         # boolean for if we need to update our neighbors
         update = False
 
-
         distance, predecessor = self.Bellman_Ford()
-       
+      
         # input new row into routing table
         for dst in self.destinations:
             # get index in distance of this destination 
@@ -253,25 +257,38 @@ class Router:
             # check to see if there is already an entry 
             if dst in self.rt_tbl_D[self.name].keys(): 
                 for interface, cost in self.rt_tbl_D[self.name][dst].items():
-                    #TODO: keep track of predecessors so 
-                    # interface can be updated
-               
-                                  
-                    # if cost is now different, input new cost 
-                    #TODO: input actual interface instead of just the 
-                    # one that was already there   
+                    # if cost is now different, get new interface
+                    # and input new cost 
                     if cost != distance[i]:
-                        self.rt_tbl_D[self.name][dst] = {interface: distance[i]}
+                        nInterface = self.get_interface(dst, predecessor) 
+                        # check to see if we have valid new interface
+                        if nInterface == -1:
+                            nInterface = interface
+ 
+                        self.rt_tbl_D[self.name][dst] = {nInterface: distance[i]}
                         update = True  
             # if there is no entry, create one
             #TODO: input actual interface instead of just 0   
             else:
-                self.rt_tbl_D[self.name][dst] = {interface_i: distance[i]}
+                nInterface = self.get_interface(dst, predecessor) 
+                self.rt_tbl_D[self.name][dst] = {nInterface: distance[i]}
                 update = True                
 
  
         return update
-   
+  
+    def get_interface(self, destination, predecessor):
+        for i in range(len(predecessor)): 
+            # check to see if destination is self
+            if destination == self.name:
+                return -1 
+            # if we find the destination in self.neighbor_L, 
+            # return that interface
+            if destination in self.neighbor_L:
+                return self.neighbor_L.index(destination)
+            else:
+                destination = self.destinations[predecessor[self.destinations.index(destination)]] 
+        return -1        
 
     def Bellman_Ford(self):
         edges = list()
@@ -308,16 +325,16 @@ class Router:
                 if (distance[u] + edge[2]) < distance[v]:
                     distance[v] = distance[u] + edge[2]
                     predecessor[v] = u 
-                if (distance[v] + edge[2]) < distance[u]:
-                    distance[u] = distance[v] + edge[2]
-                    predecessor[v] = u 
+#                if (distance[v] + edge[2]) < distance[u]:
+#                    distance[u] = distance[v] + edge[2]
+#                    predecessor[v] = u 
 
         return distance, predecessor 
  
     ## Print routing table
     def print_routes(self):
         #TODO: print the routes as a two dimensional table
-        print('\nRouting Table for', self)
+        print('\nRouting Table for %s:' % (self.name))
         print('\n             Cost To')
         print('             ', end='')
         # print all possible destinations 
