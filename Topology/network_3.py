@@ -239,9 +239,9 @@ class Router:
 
         update = self.update_table(i) 
         # print new routing table 
-        self.print_routes()
         # if we got a new entry or updated our table  
         if new or update:
+            self.print_routes()
             # send routes out all interfaces 
             for i in range(len(self.intf_L)):
                 self.send_routes(i)
@@ -250,12 +250,26 @@ class Router:
     
     def read_update(self, update_D): 
         update = False 
-        for router, entry in update_D.items():
-            if len(update_D[router].keys()) > len(self.rt_tbl_D[router].keys()):
-                self.rt_tbl_D[router] = entry 
-                update = True 
-        return update   
-                            
+        
+        for router in self.rt_tbl_D.keys():
+            # for each destination found for this router in update 
+            for nDst in update_D[router].keys():
+                # if the destination is not in the table yet, enter it 
+                if nDst not in self.rt_tbl_D[router].keys():
+                    self.rt_tbl_D[router][nDst] = update_D[router][nDst]
+                    update = True  
+                # if new destination is already in the routing table,
+                # check to see if it has a cost that is smaller than
+                # the one already in the table 
+                else:
+                    for nIntf, nCost in update_D[router][nDst].items():
+                        for intf, cost in self.rt_tbl_D[router][nDst].items(): 
+                            # if new cost is smaller, enter it into table  
+                            if nCost < cost:
+                                self.rt_tbl_D[router][nDst][intf] = nCost 
+                                update = True
+        return update           
+     
     ## Use Bellman-Ford to update table
     def update_table(self, in_interface):
         # boolean for if we need to update our neighbors
