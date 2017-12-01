@@ -3,7 +3,7 @@ import threading
 import json
 import sys 
 
-
+ 
 ## wrapper class for a queue of packets
 class Interface:
     ## @param maxsize - the maximum size of the queue storing packets
@@ -140,13 +140,14 @@ class Router:
         self.routers = ['RA', 'RB'] 
 #        self.edges = [['H1', 'RA', 1], ['RA', 'RB', 1], ['RB', 'H2', 3]] 
         self.stop = False #for thread termination
-        self.name = name
+        self.name = name 
         #create a list of interfaces
         self.intf_L = [Interface(max_queue_size) for _ in range(len(cost_D))]
         #save neighbors and interfeces on which we connect to them
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
         #TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}      # {destination: {router: cost}}
+        self.neighbor_L = [-1] * len(self.intf_L) 
         # initialize routing table 
         for router in self.routers:
             # add empty dict as entry for all routers 
@@ -221,11 +222,21 @@ class Router:
       
         update_D = json.loads(p.data_S)
         for router, entry in update_D.items():
-            # if entry is not referring to this router
+            # check to see if we have an entry in self.neighbor_L
+            # that matches the interface where we got this update
+            # if not, then add router to this list to show that 
+            # this router is on the other side of this interface 
+            print('router:', router, 'self.rt_tbl_D.keys()', self.rt_tbl_D.keys())
+            if self.rt_tbl_D[router] == {}:
+                print('self.rt_tbl_D[router] has no entry') 
+                if self.neighbor_L[i] == -1: 
+                    self.neighbor_L[i] = router; 
+                    print("!!!!Interface table for", self.name, "is now:", self.neighbor_L)
+             # if entry is not referring to this router
             if router != self.name:           
                 # update the entry 
                 self.rt_tbl_D[router] = entry      
-    
+
         update = self.update_table(i) 
         # print new routing table 
         self.print_routes()
@@ -236,10 +247,9 @@ class Router:
                 self.send_routes(i)
 
     ## Use Bellman-Ford to update table
-    def update_table(self, interface):
+    def update_table(self, in_interface):
         # boolean for if we need to update our neighbors
         update = False
-
 
         distance, predecessor = self.Bellman_Ford()
        
@@ -258,12 +268,12 @@ class Router:
                     #TODO: input actual interface instead of just the 
                     # one that was already there   
                     if cost != distance[i]:
-                        self.rt_tbl_D[self.name][dst] = {interface: distance[i]}
+                        self.rt_tbl_D[self.name][dst] = {in_interface: distance[i]}
                         update = True  
             # if there is no entry, create one
             #TODO: input actual interface instead of just 0   
             else:
-                self.rt_tbl_D[self.name][dst] = {interface: distance[i]}
+                self.rt_tbl_D[self.name][dst] = {in_interface: distance[i]}
                 update = True                
 
  
